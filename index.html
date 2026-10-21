@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกความดันโลหิต - นางประไพ จันทร์กลาง</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Sarabun & Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        },
+                        bp: {
+                            normal: '#10b981',    <!-- เขียว -->
+                            elevated: '#f59e0b',  <!-- เหลือง -->
+                            stage1: '#f97316',    <!-- ส้ม -->
+                            stage2: '#ef4444',    <!-- แดง -->
+                            crisis: '#991b1b',    <!-- แดงเข้ม -->
+                            low: '#3b82f6'        <!-- ฟ้า -->
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+
+        /* ตกแต่งสไตล์สำหรับการพิมพ์ PDF */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background-color: white !important;
+                color: black !important;
+                font-size: 12pt;
+            }
+            .card-box {
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+                break-inside: avoid;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen pb-12">
+
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-sky-700 via-sky-600 to-teal-600 text-white shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white/20 p-3 rounded-2xl backdrop-blur-sm">
+                        <i class="fa-solid font-bold fa-heart-pulse text-3xl sm:text-4xl text-rose-300"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">ระบบบันทึกความดันโลหิตผู้สูงอายุ</h1>
+                        <p class="text-sky-100 text-sm sm:text-base font-light">โปรแกรมติดตามสุขภาพประจำวันสำหรับผู้สูงวัย</p>
+                    </div>
+                </div>
+                
+                <!-- Patient Badge Header -->
+                <div class="bg-white/10 border border-white/20 rounded-xl p-3 sm:px-5 sm:py-3 flex items-center justify-between md:justify-end gap-4 backdrop-blur-md">
+                    <div class="text-right">
+                        <p class="text-xs text-sky-100 uppercase tracking-wider">ผู้ป่วยในความดูแล</p>
+                        <p class="text-lg sm:text-xl font-bold text-white">นางประไพ จันทร์กลาง</p>
+                    </div>
+                    <div class="bg-amber-400 text-slate-900 font-extrabold px-3 py-1.5 rounded-lg text-sm sm:text-base shadow">
+                        อายุ 89 ปี
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Header สำหรับการพิมพ์ (Print Only Header) -->
+    <div class="hidden print-only p-4 mb-4 border-b-2 border-slate-800">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">รายงานผลการตรวจวัดความดันโลหิต</h1>
+                <p class="text-sm text-gray-600">บันทึกติดตามสุขภาพสำหรับนำเสนอแพทย์เจ้าของไข้</p>
+            </div>
+            <div class="text-right">
+                <p class="text-lg font-bold">นางประไพ จันทร์กลาง (อายุ 89 ปี)</p>
+                <p class="text-xs text-gray-500" id="print-date">วันที่พิมพ์: -</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-6">
+
+        <!-- Top Action Controls (Print & Sample Data) -->
+        <div class="flex flex-wrap items-center justify-between gap-3 no-print bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <div class="flex items-center space-x-2 text-slate-600 text-sm font-medium">
+                <i class="fa-solid fa-circle-info text-sky-600 text-lg"></i>
+                <span>จัดการข้อมูลบันทึกความดัน</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="loadSampleData()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium text-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-database text-slate-500"></i>
+                    <span>โหลดข้อมูลตัวอย่าง</span>
+                </button>
+                <button onclick="confirmClearData()" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-medium text-sm transition flex items-center space-x-2">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>ล้างข้อมูลทั้งหมด</span>
+                </button>
+                <button onclick="window.print()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm shadow-md hover:shadow-lg transition flex items-center space-x-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>พิมพ์รายงาน PDF / ออกรายงาน</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Layout Grid: Form + Latest Summary -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- 1. Input Form Section (Lg: 5 Cols) -->
+            <section class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 no-print">
+                <div class="flex items-center space-x-3 mb-5 border-b border-slate-100 pb-3">
+                    <div class="bg-sky-100 p-2.5 rounded-xl text-sky-700">
+                        <i class="fa-solid fa-pen-to-square text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">บันทึกผลการตรวจวัด</h2>
+                        <p class="text-xs text-slate-500">กรอกค่าความดันโลหิตและชีพจรล่าสุด</p>
+                    </div>
+                </div>
+
+                <form id="bp-form" onsubmit="handleSaveRecord(event)" class="space-y-4">
+                    <!-- Date and Time -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">วันที่ตรวจ</label>
+                            <input type="date" id="input-date" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-base font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">เวลาที่ตรวจ</label>
+                            <input type="time" id="input-time" required class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-base font-medium">
+                        </div>
+                    </div>
+
+                    <!-- Systolic & Diastolic -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100">
+                            <label class="block text-sm font-bold text-rose-800 mb-1">
+                                ความดันตัวบน (SYS)
+                                <span class="text-xs font-normal text-rose-600 block">Systolic (mmHg)</span>
+                            </label>
+                            <input type="number" id="input-sys" min="50" max="250" placeholder="เช่น 128" required class="w-full px-3 py-2.5 rounded-lg border border-rose-200 focus:ring-2 focus:ring-rose-500 text-slate-800 text-xl font-bold text-center">
+                        </div>
+                        <div class="bg-sky-50/50 p-3 rounded-xl border border-sky-100">
+                            <label class="block text-sm font-bold text-sky-800 mb-1">
+                                ความดันตัวล่าง (DIA)
+                                <span class="text-xs font-normal text-sky-600 block">Diastolic (mmHg)</span>
+                            </label>
+                            <input type="number" id="input-dia" min="30" max="150" placeholder="เช่น 78" required class="w-full px-3 py-2.5 rounded-lg border border-sky-200 focus:ring-2 focus:ring-sky-500 text-slate-800 text-xl font-bold text-center">
+                        </div>
+                    </div>
+
+                    <!-- Pulse Rate -->
+                    <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100">
+                        <label class="block text-sm font-bold text-emerald-800 mb-1">
+                            อัตราการเต้นของหัวใจ (Pulse Rate)
+                            <span class="text-xs font-normal text-emerald-600">ครั้ง/นาที (bpm)</span>
+                        </label>
+                        <input type="number" id="input-pulse" min="30" max="200" placeholder="เช่น 72" required class="w-full px-3 py-2.5 rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xl font-bold text-center">
+                    </div>
+
+                    <!-- Note / Timing Preset -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1">ช่วงเวลา / หมายเหตุเพิ่มเติม</label>
+                        <div class="grid grid-cols-2 gap-1.5 mb-2">
+                            <button type="button" onclick="setNote('ก่อนอาหารเช้า')" class="py-1.5 px-2 bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-800 rounded-lg text-xs font-medium transition text-center">🌅 ก่อนอาหารเช้า</button>
+                            <button type="button" onclick="setNote('หลังอาหารเช้า')" class="py-1.5 px-2 bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-800 rounded-lg text-xs font-medium transition text-center">🌤️ หลังอาหารเช้า</button>
+                            <button type="button" onclick="setNote('ก่อนนอน')" class="py-1.5 px-2 bg-slate-100 hover:bg-sky-100 text-slate-700 hover:text-sky-800 rounded-lg text-xs font-medium transition text-center">🌙 ก่อนนอน</button>
+                            <button type="button" onclick="setNote('มีอาการเวียนศีรษะ')" class="py-1.5 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-medium transition text-center">⚠️ เวียนศีรษะ</button>
+                        </div>
+                        <input type="text" id="input-note" placeholder="ระบุเพิ่มเติม เช่น พักผ่อนน้อย, รู้สึกเพลีย" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-sky-500 text-sm">
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-3.5 px-4 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-base shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-floppy-disk text-lg"></i>
+                        <span>บันทึกข้อมูลวัดความดัน</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- 2. Latest Status Card & Quick Overview (Lg: 7 Cols) -->
+            <section class="lg:col-span-7 space-y-6">
+                <!-- Status Display Banner -->
+                <div id="latest-card" class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 transition-all duration-300 card-box">
+                    <div class="flex justify-between items-start mb-4 border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">ผลการวัดล่าสุด</span>
+                            <h3 id="latest-datetime" class="text-lg font-bold text-slate-800">ยังไม่มีข้อมูล</h3>
+                        </div>
+                        <span id="latest-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
+                            -
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-center my-4">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-xs text-slate-500 font-medium block">ตัวบน (SYS)</span>
+                            <span id="latest-sys" class="text-2xl sm:text-3xl font-extrabold text-slate-800">--</span>
+                            <span class="text-[10px] text-slate-400 block">mmHg</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-xs text-slate-500 font-medium block">ตัวล่าง (DIA)</span>
+                            <span id="latest-dia" class="text-2xl sm:text-3xl font-extrabold text-slate-800">--</span>
+                            <span class="text-[10px] text-slate-400 block">mmHg</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                            <span class="text-xs text-slate-500 font-medium block">ชีพจร (PUL)</span>
+                            <span id="latest-pulse" class="text-2xl sm:text-3xl font-extrabold text-emerald-600">--</span>
+                            <span class="text-[10px] text-slate-400 block">bpm</span>
+                        </div>
+                    </div>
+
+                    <!-- Note Display -->
+                    <div class="mt-3 text-sm text-slate-600 bg-slate-50 px-3 py-2 rounded-lg flex items-center space-x-2">
+                        <i class="fa-regular fa-comment-dots text-slate-400"></i>
+                        <span>หมายเหตุ: <span id="latest-note" class="font-medium text-slate-700">-</span></span>
+                    </div>
+                </div>
+
+                <!-- Medical Evaluation Summary & Senior Guidance -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 card-box">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div class="bg-amber-100 p-2.5 rounded-xl text-amber-700">
+                            <i class="fa-solid fa-user-doctor text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">การวิเคราะห์และคำแนะนำทางการแพทย์</h3>
+                            <p class="text-xs text-slate-500">สำหรับผู้สูงอายุ 89 ปี (อิงตามหลักวิชาการ)</p>
+                        </div>
+                    </div>
+
+                    <div id="medical-analysis" class="space-y-3">
+                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600">
+                            กรุณาบันทึกข้อมูลเพื่อรับคำแนะนำทางการแพทย์
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- 3. Interactive Chart Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 card-box">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-100 p-2.5 rounded-xl text-indigo-700">
+                        <i class="fa-solid fa-chart-line text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">กราฟแสดงแนวโน้มความดันโลหิตและชีพจร</h3>
+                        <p class="text-xs text-slate-500">ติดตามการเปลี่ยนแปลงตามช่วงเวลา</p>
+                    </div>
+                </div>
+
+                <!-- Filter Controls (Daily, Weekly, Monthly, All) -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs sm:text-sm font-medium no-print">
+                    <button onclick="setFilter('daily')" id="btn-daily" class="px-3 py-1.5 rounded-lg transition">รายวัน</button>
+                    <button onclick="setFilter('weekly')" id="btn-weekly" class="px-3 py-1.5 rounded-lg transition">รายสัปดาห์</button>
+                    <button onclick="setFilter('monthly')" id="btn-monthly" class="px-3 py-1.5 rounded-lg transition">รายเดือน</button>
+                    <button onclick="setFilter('all')" id="btn-all" class="px-3 py-1.5 rounded-lg transition active">ทั้งหมด</button>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="relative w-full h-[320px] sm:h-[400px]">
+                <canvas id="bpChart"></canvas>
+            </div>
+
+            <!-- Chart Legend Info -->
+            <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap justify-center gap-4 text-xs text-slate-600">
+                <div class="flex items-center space-x-1.5">
+                    <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                    <span>Systolic (ความดันตัวบน)</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="w-3 h-3 rounded-full bg-sky-500 inline-block"></span>
+                    <span>Diastolic (ความดันตัวล่าง)</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                    <span>Pulse (อัตราเต้นหัวใจ)</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="w-3 h-0.5 border-t-2 border-dashed border-rose-400 inline-block"></span>
+                    <span>เกณฑ์เฝ้าระวังตัวบน (140 mmHg)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Historical Logs Table Section -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 sm:p-6 card-box">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-teal-100 p-2.5 rounded-xl text-teal-700">
+                        <i class="fa-solid fa-list-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">ประวัติการบันทึกข้อมูล</h3>
+                        <p class="text-xs text-slate-500">ตารางแสดงรายการย้อนหลังทั้งหมด</p>
+                    </div>
+                </div>
+                <span id="record-count" class="text-xs font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">0 รายการ</span>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-xs sm:text-sm font-semibold border-b border-slate-200">
+                            <th class="p-3">วัน-เวลา</th>
+                            <th class="p-3 text-center">ตัวบน (SYS)</th>
+                            <th class="p-3 text-center">ตัวล่าง (DIA)</th>
+                            <th class="p-3 text-center">ชีพจร (bpm)</th>
+                            <th class="p-3">การประเมิน</th>
+                            <th class="p-3">หมายเหตุ</th>
+                            <th class="p-3 text-center no-print">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody" class="divide-y divide-slate-100 text-sm sm:text-base">
+                        <!-- Table rows populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Senior Care Medical Reference Guide -->
+        <section class="bg-gradient-to-br from-sky-50 to-indigo-50 rounded-2xl p-5 sm:p-6 border border-sky-100 no-print">
+            <h3 class="text-base font-bold text-sky-900 mb-2 flex items-center space-x-2">
+                <i class="fa-solid fa-lightbulb text-amber-500"></i>
+                <span>ข้อแนะนำพิเศษสำหรับการดูแลความดันโลหิตในผู้สูงอายุ 89 ปี</span>
+            </h3>
+            <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-700">
+                <li class="flex items-start space-x-2">
+                    <i class="fa-solid fa-angle-right text-sky-600 mt-1"></i>
+                    <span><strong>เป้าหมายความดัน:</strong> ผู้สูงอายุ 80 ปีขึ้นไป ความดันตัวบน (SYS) ควรดูแลให้อยู่ช่วง 130 - 140 mmHg (ไม่ควรกดต่ำจนเกินไป เพื่อป้องกันเลือดไปเลี้ยงสมองไม่พอ)</span>
+                </li>
+                <li class="flex items-start space-x-2">
+                    <i class="fa-solid fa-angle-right text-sky-600 mt-1"></i>
+                    <span><strong>ระวังความดันตกเมื่อเปลี่ยนท่า (Orthostatic Hypotension):</strong> ควรให้คุณยายลุกนั่งพักขอบเตียง 1-2 นาทีก่อนยืดตัวยืน ป้องกันการหน้ามืดหกล้ม</span>
+                </li>
+                <li class="flex items-start space-x-2">
+                    <i class="fa-solid fa-angle-right text-sky-600 mt-1"></i>
+                    <span><strong>ช่วงเวลาวัดความดัน:</strong> วัดสม่ำเสมอวันละ 2 ครั้ง (เช้าหลังตื่นนอนภายใน 1 ชม. และก่อนนอน) โดยนั่งพัก 5 นาทีล่วงหน้า</span>
+                </li>
+                <li class="flex items-start space-x-2">
+                    <i class="fa-solid fa-angle-right text-sky-600 mt-1"></i>
+                    <span><strong>อาการเร่งด่วนที่ต้องพบแพทย์ทันที:</strong> ความดันตัวบน > 180 หรือ มีอาการปวดศีรษะรุนแรง ตาพร่ามัว แขนขาอ่อนแรงครึ่งซีก หรือเจ็บหน้าอก</span>
+                </li>
+            </ul>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl mx-auto px-4 text-center mt-8 text-xs text-slate-400 no-print">
+        <p>ระบบบันทึกความดันโลหิตสำหรับผู้สูงอายุ - นางประไพ จันทร์กลาง (อายุ 89 ปี)</p>
+        <p class="mt-1">พัฒนาด้วย HTML, Tailwind CSS, Chart.js | พร้อมใช้งานบน GitHub Pages</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // Key for LocalStorage
+        const STORAGE_KEY = 'prapai_bp_records_v1';
+
+        // Global State
+        let bpRecords = [];
+        let bpChart = null;
+        let currentFilter = 'all';
+
+        // Sample Data for Initial Load
+        const sampleRecords = [
+            { id: '1', date: '2026-10-15', time: '07:30', sys: 132, dia: 78, pulse: 72, note: 'ก่อนอาหารเช้า' },
+            { id: '2', date: '2026-10-15', time: '20:00', sys: 135, dia: 80, pulse: 70, note: 'ก่อนนอน' },
+            { id: '3', date: '2026-10-16', time: '07:45', sys: 138, dia: 82, pulse: 74, note: 'ก่อนอาหารเช้า' },
+            { id: '4', date: '2026-10-16', time: '20:15', sys: 142, dia: 85, pulse: 76, note: 'เดินเล่นช่วงเย็น' },
+            { id: '5', date: '2026-10-17', time: '08:00', sys: 128, dia: 75, pulse: 68, note: 'ก่อนอาหารเช้า พักผ่อนเต็มที่' },
+            { id: '6', date: '2026-10-17', time: '19:30', sys: 130, dia: 76, pulse: 71, note: 'ก่อนนอน' },
+            { id: '7', date: '2026-10-18', time: '07:30', sys: 134, dia: 79, pulse: 73, note: 'ก่อนอาหารเช้า' },
+            { id: '8', date: '2026-10-18', time: '14:00', sys: 145, dia: 88, pulse: 80, note: 'รู้สึกเวียนศีรษะเล็กน้อย' },
+            { id: '9', date: '2026-10-19', time: '07:30', sys: 126, dia: 74, pulse: 69, note: 'ก่อนอาหารเช้า' },
+            { id: '10', date: '2026-10-19', time: '20:00', sys: 132, dia: 78, pulse: 72, note: 'ก่อนนอน' },
+            { id: '11', date: '2026-10-20', time: '07:40', sys: 130, dia: 76, pulse: 70, note: 'ก่อนอาหารเช้า' },
+            { id: '12', date: '2026-10-20', time: '20:30', sys: 136, dia: 80, pulse: 75, note: 'ก่อนนอน' },
+            { id: '13', date: '2026-10-21', time: '07:30', sys: 129, dia: 77, pulse: 71, note: 'ก่อนอาหารเช้า' }
+        ];
+
+        // On Document Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            initDateTime();
+            loadRecords();
+            initChart();
+            renderApp();
+            
+            // Set Print Date
+            const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('print-date').innerText = 'วันที่พิมพ์: ' + today;
+        });
+
+        // Set Current Date and Time in Form
+        function initDateTime() {
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            document.getElementById('input-date').value = dateStr;
+            document.getElementById('input-time').value = `${hours}:${minutes}`;
+        }
+
+        // Set Quick Note Text
+        function setNote(text) {
+            document.getElementById('input-note').value = text;
+        }
+
+        // Load records from LocalStorage
+        function loadRecords() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try {
+                    bpRecords = JSON.parse(stored);
+                } catch (e) {
+                    bpRecords = [...sampleRecords];
+                }
+            } else {
+                // First time load sample data
+                bpRecords = [...sampleRecords];
+                saveRecordsToStorage();
+            }
+        }
+
+        // Save records to LocalStorage
+        function saveRecordsToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(bpRecords));
+        }
+
+        // Load Sample Data Action Button
+        function loadSampleData() {
+            bpRecords = [...sampleRecords];
+            saveRecordsToStorage();
+            renderApp();
+        }
+
+        // Clear All Data
+        function confirmClearData() {
+            if (confirm('คุณต้องการล้างข้อมูลบันทึกความดันทั้งหมดใช่หรือไม่?')) {
+                bpRecords = [];
+                saveRecordsToStorage();
+                renderApp();
+            }
+        }
+
+        // Form Submit Handler
+        function handleSaveRecord(event) {
+            event.preventDefault();
+
+            const date = document.getElementById('input-date').value;
+            const time = document.getElementById('input-time').value;
+            const sys = parseInt(document.getElementById('input-sys').value);
+            const dia = parseInt(document.getElementById('input-dia').value);
+            const pulse = parseInt(document.getElementById('input-pulse').value);
+            const note = document.getElementById('input-note').value.trim() || '-';
+
+            const newRecord = {
+                id: Date.now().toString(),
+                date,
+                time,
+                sys,
+                dia,
+                pulse,
+                note
+            };
+
+            bpRecords.push(newRecord);
+            // Sort by date and time ascending
+            bpRecords.sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
+
+            saveRecordsToStorage();
+            renderApp();
+
+            // Clear sys, dia, pulse, note inputs
+            document.getElementById('input-sys').value = '';
+            document.getElementById('input-dia').value = '';
+            document.getElementById('input-pulse').value = '';
+            document.getElementById('input-note').value = '';
+        }
+
+        // Delete Individual Record
+        function deleteRecord(id) {
+            if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) {
+                bpRecords = bpRecords.filter(r => r.id !== id);
+                saveRecordsToStorage();
+                renderApp();
+            }
+        }
+
+        // Categorize Blood Pressure (Standard Medical Criteria + Senior Considerations)
+        function classifyBP(sys, dia) {
+            if (sys > 180 || dia > 120) {
+                return { 
+                    label: 'วิกฤต (Crisis)', 
+                    color: 'bg-rose-900 text-white', 
+                    border: 'border-rose-900',
+                    textColor: 'text-rose-900',
+                    level: 5 
+                };
+            }
+            if (sys >= 140 || dia >= 90) {
+                return { 
+                    label: 'สูงระดับ 2', 
+                    color: 'bg-rose-500 text-white', 
+                    border: 'border-rose-500',
+                    textColor: 'text-rose-600',
+                    level: 4 
+                };
+            }
+            if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89)) {
+                return { 
+                    label: 'สูงระดับ 1', 
+                    color: 'bg-amber-500 text-white', 
+                    border: 'border-amber-500',
+                    textColor: 'text-amber-600',
+                    level: 3 
+                };
+            }
+            if ((sys >= 120 && sys <= 129) && dia < 80) {
+                return { 
+                    label: 'สูงเล็กน้อย', 
+                    color: 'bg-yellow-400 text-slate-900', 
+                    border: 'border-yellow-400',
+                    textColor: 'text-yellow-600',
+                    level: 2 
+                };
+            }
+            if (sys < 90 || dia < 60) {
+                return { 
+                    label: 'ความดันต่ำ', 
+                    color: 'bg-sky-500 text-white', 
+                    border: 'border-sky-500',
+                    textColor: 'text-sky-600',
+                    level: 0 
+                };
+            }
+            return { 
+                label: 'ปกติ', 
+                color: 'bg-emerald-500 text-white', 
+                border: 'border-emerald-500',
+                textColor: 'text-emerald-600',
+                level: 1 
+            };
+        }
+
+        // Render Entire Application UI
+        function renderApp() {
+            renderLatestCard();
+            renderTable();
+            renderMedicalAnalysis();
+            updateChart();
+        }
+
+        // Render Latest Record Card
+        function renderLatestCard() {
+            const card = document.getElementById('latest-card');
+            if (bpRecords.length === 0) {
+                document.getElementById('latest-datetime').innerText = 'ยังไม่มีข้อมูล';
+                document.getElementById('latest-badge').innerText = '-';
+                document.getElementById('latest-badge').className = 'px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600';
+                document.getElementById('latest-sys').innerText = '--';
+                document.getElementById('latest-dia').innerText = '--';
+                document.getElementById('latest-pulse').innerText = '--';
+                document.getElementById('latest-note').innerText = '-';
+                return;
+            }
+
+            const latest = bpRecords[bpRecords.length - 1];
+            const bpStatus = classifyBP(latest.sys, latest.dia);
+
+            // Format Thai Date Time
+            const dateObj = new Date(`${latest.date}T${latest.time}`);
+            const dateStr = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            
+            document.getElementById('latest-datetime').innerText = `${dateStr} เวลา ${latest.time} น.`;
+            
+            const badge = document.getElementById('latest-badge');
+            badge.innerText = bpStatus.label;
+            badge.className = `px-3 py-1 rounded-full text-xs font-bold ${bpStatus.color}`;
+
+            document.getElementById('latest-sys').innerText = latest.sys;
+            document.getElementById('latest-dia').innerText = latest.dia;
+            document.getElementById('latest-pulse').innerText = latest.pulse;
+            document.getElementById('latest-note').innerText = latest.note || '-';
+        }
+
+        // Render Logs Table
+        function renderTable() {
+            const tbody = document.getElementById('logs-tbody');
+            document.getElementById('record-count').innerText = `${bpRecords.length} รายการ`;
+
+            if (bpRecords.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-slate-400">
+                            ยังไม่มีข้อมูลการตรวจวัดความดันโลหิต
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Show latest first in table
+            const sortedDesc = [...bpRecords].reverse();
+
+            tbody.innerHTML = sortedDesc.map(item => {
+                const status = classifyBP(item.sys, item.dia);
+                const dateObj = new Date(`${item.date}T${item.time}`);
+                const dateTh = dateObj.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-medium whitespace-nowrap">
+                            <div>${dateTh}</div>
+                            <div class="text-xs text-slate-400">${item.time} น.</div>
+                        </td>
+                        <td class="p-3 text-center font-bold text-rose-600">${item.sys}</td>
+                        <td class="p-3 text-center font-bold text-sky-600">${item.dia}</td>
+                        <td class="p-3 text-center font-medium text-emerald-600">${item.pulse}</td>
+                        <td class="p-3">
+                            <span class="inline-block px-2.5 py-1 rounded-md text-xs font-semibold ${status.color}">
+                                ${status.label}
+                            </span>
+                        </td>
+                        <td class="p-3 text-slate-600 text-xs sm:text-sm max-w-[150px] truncate" title="${item.note}">
+                            ${item.note}
+                        </td>
+                        <td class="p-3 text-center no-print">
+                            <button onclick="deleteRecord('${item.id}')" class="text-rose-400 hover:text-rose-600 p-1 transition" title="ลบรายการ">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Medical Analysis & Recommendation Logic (Specifically tailored for age 89)
+        function renderMedicalAnalysis() {
+            const container = document.getElementById('medical-analysis');
+            if (bpRecords.length === 0) {
+                container.innerHTML = `<div class="p-4 rounded-xl bg-slate-50 text-slate-500 text-sm">กรุณาบันทึกข้อมูลความดันโลหิตอย่างน้อย 1 รายการเพื่อการวิเคราะห์</div>`;
+                return;
+            }
+
+            // Calculate Averages
+            const totalSys = bpRecords.reduce((acc, r) => acc + r.sys, 0);
+            const totalDia = bpRecords.reduce((acc, r) => acc + r.dia, 0);
+            const totalPulse = bpRecords.reduce((acc, r) => acc + r.pulse, 0);
+            const count = bpRecords.length;
+
+            const avgSys = Math.round(totalSys / count);
+            const avgDia = Math.round(totalDia / count);
+            const avgPulse = Math.round(totalPulse / count);
+
+            const overallStatus = classifyBP(avgSys, avgDia);
+
+            // Analysis text tailored for 89-year-old senior
+            let adviceHtml = '';
+            let alertBg = 'bg-sky-50 border-sky-200';
+
+            if (avgSys > 150 || avgDia > 90) {
+                alertBg = 'bg-rose-50 border-rose-200';
+                adviceHtml = `
+                    <div class="space-y-2">
+                        <p class="font-bold text-rose-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ความดันเฉลี่ยค่อนข้างสูงกว่าเกณฑ์สำหรับผู้สูงอายุ</p>
+                        <ul class="list-disc list-inside text-xs sm:text-sm text-slate-700 space-y-1">
+                            <li>ลดการปรุงเค็ม หลีกเลี่ยงอาหารหมักดอง ผงชูรส และซุปก้อน</li>
+                            <li>ตรวจสอบว่าคุณยายทานยาความดันสม่ำเสมอตามแพทย์สั่งหรือไม่</li>
+                            <li>หากความดันตัวบนเกิน 160 mmHg ต่อเนื่องกันหลายวัน ควรนำบันทึกนี้ปรึกษาแพทย์เพื่อปรับยา</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (avgSys >= 130 && avgSys <= 145) {
+                alertBg = 'bg-emerald-50 border-emerald-200';
+                adviceHtml = `
+                    <div class="space-y-2">
+                        <p class="font-bold text-emerald-800"><i class="fa-solid fa-circle-check mr-1"></i> ค่าความดันอยู่ในระดับที่เหมาะสมและปลอดภัยสำหรับวัย 89 ปี</p>
+                        <ul class="list-disc list-inside text-xs sm:text-sm text-slate-700 space-y-1">
+                            <li>สำหรับผู้สูงอายุ 89 ปี ความดันตัวบนช่วง 130-140 mmHg ถือเป็นระดับที่ปลอดภัย ป้องกันภาวะเลือดไปเลี้ยงสมองไม่พอ</li>
+                            <li>แนะนำให้รับประทานอาหารตามหลัก DASH Diet (เน้นผักสุก ปลา จิบน้ำสม่ำเสมอ)</li>
+                            <li>ทานยาความดันตามเวลาและบันทึกผลต่อเนื่อง</li>
+                        </ul>
+                    </div>
+                `;
+            } else if (avgSys < 110) {
+                alertBg = 'bg-amber-50 border-amber-200';
+                adviceHtml = `
+                    <div class="space-y-2">
+                        <p class="font-bold text-amber-800"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ข้อควรระวัง: ค่าความดันเฉลี่ยค่อนข้างต่ำ</p>
+                        <ul class="list-disc list-inside text-xs sm:text-sm text-slate-700 space-y-1">
+                            <li>ระวังภาวะหน้ามืด เวียนศีรษะ โดยเฉพาะเวลาเปลี่ยนท่าทาง (เช่น ลุกจากเตียง)</li>
+                            <li>ดื่มน้ำให้เพียงพอตลอดวัน (จิบทีละน้อย)</li>
+                            <li>หากมีอาการเพลียมาก หรือหน้ามืดบ่อยครั้ง ควรแจ้งแพทย์เพื่อพิจารณาลดยาความดัน</li>
+                        </ul>
+                    </div>
+                `;
+            } else {
+                alertBg = 'bg-sky-50 border-sky-200';
+                adviceHtml = `
+                    <div class="space-y-2">
+                        <p class="font-bold text-sky-800"><i class="fa-solid fa-circle-info mr-1"></i> ค่าความดันโลหิตอยู่ในเกณฑ์ปกติทั่วไป</p>
+                        <p class="text-xs sm:text-sm text-slate-700">ควรรักษาพฤติกรรมการรับประทานอาหาร การนอนหลับพักผ่อน และตรวจวัดสม่ำเสมอวันละ 2 ครั้ง</p>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <!-- Summary Averages -->
+                <div class="grid grid-cols-3 gap-2 bg-slate-100 p-3 rounded-xl text-center mb-3">
+                    <div>
+                        <span class="text-[11px] text-slate-500 block">SYS เฉลี่ย</span>
+                        <span class="text-lg sm:text-xl font-bold text-rose-600">${avgSys}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 block">DIA เฉลี่ย</span>
+                        <span class="text-lg sm:text-xl font-bold text-sky-600">${avgDia}</span>
+                    </div>
+                    <div>
+                        <span class="text-[11px] text-slate-500 block">ชีพจรเฉลี่ย</span>
+                        <span class="text-lg sm:text-xl font-bold text-emerald-600">${avgPulse}</span>
+                    </div>
+                </div>
+
+                <!-- Analysis Alert Box -->
+                <div class="p-4 rounded-xl border ${alertBg}">
+                    ${adviceHtml}
+                </div>
+            `;
+        }
+
+        // Set Chart Filter (Daily, Weekly, Monthly, All)
+        function setFilter(filter) {
+            currentFilter = filter;
+            ['daily', 'weekly', 'monthly', 'all'].forEach(f => {
+                const btn = document.getElementById(`btn-${f}`);
+                if (f === filter) {
+                    btn.className = 'px-3 py-1.5 rounded-lg bg-sky-600 text-white shadow-sm font-bold';
+                } else {
+                    btn.className = 'px-3 py-1.5 rounded-lg hover:bg-slate-200 text-slate-600';
+                }
+            });
+            updateChart();
+        }
+
+        // Filter Data Based on Selected Mode
+        function getFilteredRecords() {
+            if (bpRecords.length === 0) return [];
+            
+            const now = new Date();
+            const filtered = bpRecords.filter(r => {
+                const recordDate = new Date(r.date);
+                if (currentFilter === 'daily') {
+                    // Last 24-48 hours / recent days
+                    const diffDays = (now - recordDate) / (1000 * 60 * 60 * 24);
+                    return diffDays <= 2;
+                } else if (currentFilter === 'weekly') {
+                    // Last 7 days
+                    const diffDays = (now - recordDate) / (1000 * 60 * 60 * 24);
+                    return diffDays <= 7;
+                } else if (currentFilter === 'monthly') {
+                    // Last 30 days
+                    const diffDays = (now - recordDate) / (1000 * 60 * 60 * 24);
+                    return diffDays <= 30;
+                }
+                return true; // 'all'
+            });
+
+            return filtered;
+        }
+
+        // Initialize Chart.js
+        function initChart() {
+            const ctx = document.getElementById('bpChart').getContext('2d');
+            
+            bpChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'SYS (ตัวบน)',
+                            data: [],
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'DIA (ตัวล่าง)',
+                            data: [],
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                            borderWidth: 2.5,
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Pulse (ชีพจร)',
+                            data: [],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 1.5,
+                            borderDash: [3, 3],
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 3,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // Using custom legend above chart
+                        },
+                        tooltip: {
+                            padding: 12,
+                            titleFont: { family: 'Prompt', size: 13 },
+                            bodyFont: { family: 'Prompt', size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.dataset.label}: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Prompt', size: 11 },
+                                maxRotation: 45
+                            }
+                        },
+                        y: {
+                            min: 40,
+                            max: 200,
+                            ticks: {
+                                stepSize: 20,
+                                font: { family: 'Prompt', size: 11 }
+                            },
+                            grid: {
+                                color: '#f1f5f9'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Chart Data
+        function updateChart() {
+            if (!bpChart) return;
+
+            const filteredData = getFilteredRecords();
+
+            const labels = filteredData.map(r => {
+                const d = new Date(`${r.date}T${r.time}`);
+                return `${d.getDate()}/${d.getMonth()+1} (${r.time})`;
+            });
+
+            const sysData = filteredData.map(r => r.sys);
+            const diaData = filteredData.map(r => r.dia);
+            const pulseData = filteredData.map(r => r.pulse);
+
+            bpChart.data.labels = labels;
+            bpChart.data.datasets[0].data = sysData;
+            bpChart.data.datasets[1].data = diaData;
+            bpChart.data.datasets[2].data = pulseData;
+
+            bpChart.update();
+        }
+    </script>
+</body>
+</html>
